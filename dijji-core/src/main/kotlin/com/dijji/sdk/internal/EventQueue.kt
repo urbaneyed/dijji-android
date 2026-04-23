@@ -25,6 +25,7 @@ internal class EventQueue(
     private val appCtx: AndroidContext,
     private val api: Api,
     private val properties: Properties,
+    private val crash: CrashHandler,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val mutex = Mutex()
@@ -43,6 +44,10 @@ internal class EventQueue(
         properties: Map<String, Any?>?,
         screen: String?,
     ) {
+        // Keep a breadcrumb even for in-memory events that haven't flushed
+        // yet — so crashes include events fired seconds before death.
+        crash.addBreadcrumb(eventName, properties, screen)
+
         val event = mapOf(
             "event_id" to UUID.randomUUID().toString(),
             "name" to eventName,

@@ -2,6 +2,7 @@ package com.dijji.sdk
 
 import com.dijji.sdk.internal.Api
 import com.dijji.sdk.internal.Context
+import com.dijji.sdk.internal.CrashHandler
 import com.dijji.sdk.internal.EventQueue
 import com.dijji.sdk.internal.Ids
 import com.dijji.sdk.internal.InAppHandler
@@ -31,4 +32,5 @@ internal class DijjiScope(
     val install: InstallReferrer,
     val lifecycle: Lifecycle,
     val properties: Properties,
+    val crash: CrashHandler,
 )

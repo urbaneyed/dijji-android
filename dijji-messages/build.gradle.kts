@@ -11,14 +11,6 @@ android {
         minSdk = 24
     }
 
-    buildFeatures {
-        compose = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get()
-    }
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -32,9 +24,6 @@ android {
 dependencies {
     implementation(project(":dijji-core"))
     implementation(libs.core.ktx)
-    implementation(libs.lifecycle.runtime)
-    implementation(platform(libs.compose.bom))
-    implementation(libs.compose.ui)
-    implementation(libs.compose.material3)
-    implementation(libs.compose.foundation)
+    implementation(libs.appcompat)
+    implementation(libs.material)
 }

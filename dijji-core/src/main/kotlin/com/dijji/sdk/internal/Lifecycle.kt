@@ -25,6 +25,9 @@ internal class Lifecycle(
 
     private var foregroundActivity: Activity? = null
 
+    /** Current foreground activity, or null if app is backgrounded. */
+    fun foregroundActivity(): Activity? = foregroundActivity
+
     fun attach(app: Application) {
         app.registerActivityLifecycleCallbacks(this)
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
@@ -70,6 +73,23 @@ internal class Lifecycle(
     override fun onActivityResumed(activity: Activity) {
         foregroundActivity = activity
         session.incrementScreens()
+
+        // push_opened — fired ONCE per activity start if this activity was
+        // launched from a Dijji notification tap. dijji-push writes these
+        // extras on the PendingIntent; we consume them here so subsequent
+        // resumes of the same activity don't re-fire.
+        val intent = activity.intent
+        if (intent != null && intent.getBooleanExtra("dijji_from_push", false)) {
+            val pushId = intent.getStringExtra("dijji_push_id")?.takeIf { it.isNotEmpty() }
+            queue.enqueue(
+                eventName = "push_opened",
+                properties = pushId?.let { mapOf<String, Any?>("push_id" to it) },
+                screen = activity.javaClass.simpleName,
+            )
+            intent.removeExtra("dijji_from_push")
+            intent.removeExtra("dijji_push_id")
+        }
+
         queue.enqueue(
             eventName = "screen_view",
             properties = null,

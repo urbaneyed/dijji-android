@@ -5,6 +5,7 @@ import android.content.Context
 import com.dijji.sdk.internal.Api
 import com.dijji.sdk.internal.Bootstrap
 import com.dijji.sdk.internal.Context as DjContext
+import com.dijji.sdk.internal.CrashHandler
 import com.dijji.sdk.internal.EventQueue
 import com.dijji.sdk.internal.Ids
 import com.dijji.sdk.internal.InAppHandler
@@ -75,7 +76,8 @@ public object Dijji {
         val djContext = DjContext(appCtx)
         val api = Api(config, djContext, ids)
         val properties = Properties(appCtx)
-        val queue = EventQueue(appCtx, api, properties)
+        val crash = CrashHandler(appCtx)
+        val queue = EventQueue(appCtx, api, properties, crash)
         val session = Session(ids, queue)
         val rules = Rules(appCtx, api)
         val inbox = InAppHandler(appCtx, api, ids)
@@ -96,7 +98,10 @@ public object Dijji {
             install = install,
             lifecycle = lifecycle,
             properties = properties,
+            crash = crash,
         )
+
+        if (config.captureCrashes) crash.install()
 
         // Wire into process + activity lifecycle so app_open / app_background /
         // screen_view / session_start / session_end all fire without dev help.
@@ -213,7 +218,50 @@ public object Dijji {
     @JvmStatic
     public fun visitorId(): String = required()?.ids?.visitorId() ?: ""
 
-    // ── Internal access for sibling modules (dijji-push, dijji-messages) ──
+    // ───── Public helpers for sibling modules (dijji-push, dijji-messages) ─────
+    // These hide the internal DijjiScope while giving the extension modules
+    // everything they need. Stable-for-SDK-authors, not intended for apps
+    // but not harmful either.
+
+    /**
+     * Register an FCM push token. Called automatically by [com.dijji.push.DijjiPushDelegate]
+     * from your FirebaseMessagingService.onNewToken.
+     */
+    @JvmStatic
+    public fun registerPushToken(token: String) {
+        required()?.push?.registerToken(token)
+    }
+
+    /**
+     * Current foreground activity. Used by dijji-messages to attach in-app
+     * UI overlays to the right decor view. Null if app is backgrounded.
+     */
+    @JvmStatic
+    public fun currentActivity(): android.app.Activity? =
+        required()?.lifecycle?.foregroundActivity()
+
+    /**
+     * Fire push_received / push_opened from the dijji-push module. Also used
+     * by host apps that want to manually record a push interaction.
+     */
+    @JvmStatic
+    @JvmOverloads
+    public fun trackPushEvent(
+        event: String,
+        pushId: String? = null,
+        triggerId: String? = null,
+        extra: Map<String, Any?>? = null,
+    ) {
+        val s = required() ?: return
+        val props = buildMap<String, Any?> {
+            if (pushId != null)    put("push_id", pushId)
+            if (triggerId != null) put("trigger_id", triggerId)
+            extra?.forEach { (k, v) -> put(k, v) }
+        }.takeIf { it.isNotEmpty() }
+        s.queue.enqueue(eventName = event, properties = props, screen = null)
+    }
+
+    // Internal access for same-module callers only.
     internal fun scope(): DijjiScope? = scope
 
     private fun required(): DijjiScope? {
