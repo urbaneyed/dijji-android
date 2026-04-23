@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Dijji SDK needs network to reach dijji.com. Network state is used to
+         defer event flush when offline so we don't burn battery retrying. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application>
+        <!-- App Startup initializer. Firing here means devs don't have to call
+             anything in their own Application.onCreate — the SDK hooks up
+             lifecycle callbacks + ProcessLifecycleOwner before the first
+             activity creates. Dev still MUST call Dijji.init(siteKey) to set
+             the site key, but all the background machinery is already wired. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge"
+            xmlns:tools="http://schemas.android.com/tools">
+            <meta-data
+                android:name="com.dijji.sdk.DijjiInstaller"
+                android:value="androidx.startup" />
+        </provider>
+    </application>
+
+</manifest>
