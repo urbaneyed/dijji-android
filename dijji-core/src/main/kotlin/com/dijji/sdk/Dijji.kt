@@ -11,6 +11,7 @@ import com.dijji.sdk.internal.InAppHandler
 import com.dijji.sdk.internal.InstallReferrer
 import com.dijji.sdk.internal.Lifecycle
 import com.dijji.sdk.internal.Log
+import com.dijji.sdk.internal.Properties
 import com.dijji.sdk.internal.PushHandler
 import com.dijji.sdk.internal.Rules
 import com.dijji.sdk.internal.Session
@@ -73,7 +74,8 @@ public object Dijji {
         val ids = Ids(appCtx)
         val djContext = DjContext(appCtx)
         val api = Api(config, djContext, ids)
-        val queue = EventQueue(appCtx, api)
+        val properties = Properties(appCtx)
+        val queue = EventQueue(appCtx, api, properties)
         val session = Session(ids, queue)
         val rules = Rules(appCtx, api)
         val inbox = InAppHandler(appCtx, api, ids)
@@ -92,7 +94,8 @@ public object Dijji {
             inbox = inbox,
             push = push,
             install = install,
-            lifecycle = lifecycle
+            lifecycle = lifecycle,
+            properties = properties,
         )
 
         // Wire into process + activity lifecycle so app_open / app_background /
@@ -177,6 +180,33 @@ public object Dijji {
     public fun setEnabled(enabled: Boolean) {
         val s = required() ?: return
         s.ids.setUserOptedOut(!enabled)
+    }
+
+    /**
+     * Register a persistent user property — a.k.a. super-property. Attached
+     * to every event for this install until cleared. Typical use after login:
+     *
+     *     Dijji.setUserProperty("plan", "pro")
+     *     Dijji.setUserProperty("onboarded_on", "2026-03-12")
+     *
+     * Marketers can then segment in the Dijji dashboard by those fields
+     * without needing the app to re-send them each event.
+     */
+    @JvmStatic
+    public fun setUserProperty(key: String, value: Any?) {
+        required()?.properties?.set(key, value)
+    }
+
+    /** Bulk version of [setUserProperty]. */
+    @JvmStatic
+    public fun setUserProperties(properties: Map<String, Any?>) {
+        required()?.properties?.setAll(properties)
+    }
+
+    /** Remove a previously-registered user property. */
+    @JvmStatic
+    public fun unsetUserProperty(key: String) {
+        required()?.properties?.unset(key)
     }
 
     /** The opaque per-install visitor id. Useful for server-side correlation. */

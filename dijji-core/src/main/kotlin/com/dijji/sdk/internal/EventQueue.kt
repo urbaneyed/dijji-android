@@ -24,6 +24,7 @@ import java.util.UUID
 internal class EventQueue(
     private val appCtx: AndroidContext,
     private val api: Api,
+    private val properties: Properties,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val mutex = Mutex()
@@ -73,7 +74,8 @@ internal class EventQueue(
         }
         if (batch.isEmpty()) return
 
-        val ok = api.postCollect(batch, currentSessionId)
+        val superProps = properties.snapshot().takeIf { it.isNotEmpty() }
+        val ok = api.postCollect(batch, currentSessionId, superProps)
         if (!ok) {
             // Requeue at head so order is preserved. If we keep failing, the
             // maxSize cap in enqueue() eventually drops oldest.

@@ -7,6 +7,7 @@ import com.dijji.sdk.internal.Ids
 import com.dijji.sdk.internal.InAppHandler
 import com.dijji.sdk.internal.InstallReferrer
 import com.dijji.sdk.internal.Lifecycle
+import com.dijji.sdk.internal.Properties
 import com.dijji.sdk.internal.PushHandler
 import com.dijji.sdk.internal.Rules
 import com.dijji.sdk.internal.Session
@@ -29,4 +30,5 @@ internal class DijjiScope(
     val push: PushHandler,
     val install: InstallReferrer,
     val lifecycle: Lifecycle,
+    val properties: Properties,
 )

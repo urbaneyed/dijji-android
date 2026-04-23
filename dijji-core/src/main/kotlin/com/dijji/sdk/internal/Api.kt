@@ -38,7 +38,11 @@ internal class Api(
     )
 
     /** Collect — batched events. Returns true on 2xx, false otherwise. */
-    fun postCollect(events: List<Map<String, Any?>>, sessionId: String?): Boolean {
+    fun postCollect(
+        events: List<Map<String, Any?>>,
+        sessionId: String?,
+        superProperties: Map<String, Any?>? = null,
+    ): Boolean {
         if (events.isEmpty()) return true
         val body = mapOf<String, Any?>(
             "site" to config.siteKey,
@@ -47,14 +51,8 @@ internal class Api(
             "session_id" to sessionId,
             "app_id" to context.appId,
             "app_version" to context.appVersion,
-            "context" to mapOf(
-                "os_version" to context.osVersion,
-                "device_model" to context.deviceModel,
-                "device_mfr" to context.deviceMfr,
-                "locale" to context.locale,
-                "network_type" to context.networkType(),
-                "carrier" to context.carrier,
-            ),
+            "context" to context.snapshot(),
+            "super_properties" to superProperties,
             "events" to events,
         )
         return post("/t/app/collect", body)
