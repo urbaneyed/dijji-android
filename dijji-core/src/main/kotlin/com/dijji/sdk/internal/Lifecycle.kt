@@ -52,8 +52,8 @@ internal class Lifecycle(
             screen = foregroundActivity?.javaClass?.simpleName,
         )
         queue.flushNow()
-        // Session doesn't end on background — end on timeout. But if you want
-        // CleverTap-style "session = one foreground" you'd call session.end() here.
+        // Session doesn't end on background — ends on idle timeout instead.
+        // For "session = one foreground" semantics, call session.end() here.
     }
 
     // ── ActivityLifecycleCallbacks (per-screen) ──

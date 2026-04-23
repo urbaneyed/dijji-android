@@ -35,8 +35,8 @@ class MainActivity : ComponentActivity() {
                         },
                         onIdentify = {
                             Dijji.identify(
-                                "u_kaabil_42",
-                                traits = mapOf("plan" to "pro", "course_count" to 3)
+                                "u_demo_42",
+                                traits = mapOf("plan" to "pro", "signup_source" to "demo")
                             )
                         },
                         onOpenCourse = {

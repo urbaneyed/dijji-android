@@ -15,7 +15,7 @@ dependencies {
 
 ```kotlin
 // Application.kt
-class KaabilApp : Application() {
+class MyApp : Application() {
     override fun onCreate() {
         super.onCreate()
         Dijji.init(this, siteKey = "ws_abc123")
@@ -76,6 +76,6 @@ Dijji.init(this, siteKey = "ws_abc123") {
 ./gradlew :demo:installDebug
 ```
 
-Launch the demo, tap buttons, watch events land in
-[dijji.com](https://dijji.com) under the pilot site `ws_a2ca27847af21a0bde`
-(Kaabil alpha).
+Launch the demo, tap buttons, watch events land in your Dijji dashboard.
+Replace the placeholder site key in `demo/src/main/kotlin/com/dijji/demo/DemoApp.kt`
+with your own from [dijji.com](https://dijji.com).

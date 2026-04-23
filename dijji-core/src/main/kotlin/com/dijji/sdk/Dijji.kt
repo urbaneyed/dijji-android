@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Integration (verbatim):
  *
  * ```kotlin
- * class KaabilApp : Application() {
+ * class MyApp : Application() {
  *     override fun onCreate() {
  *         super.onCreate()
  *         Dijji.init(this, siteKey = "ws_abc123")
