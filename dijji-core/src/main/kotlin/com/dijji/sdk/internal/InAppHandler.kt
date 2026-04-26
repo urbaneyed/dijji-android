@@ -48,15 +48,16 @@ internal class InAppHandler(
     }
 
     private suspend fun pollOnce() {
-        val pushes = api.getInbox()
-        if (pushes.isEmpty()) return
-        Log.d("Inbox: ${pushes.size} action(s) pending")
-        pushes.forEach { p ->
-            val actionType = p["action_type"]?.toString() ?: return@forEach
-            val messageId  = p["id"]?.toString() ?: ""
+        val messages = api.getInbox()
+        if (messages.isEmpty()) return
+        Log.d("Inbox: ${messages.size} message(s) pending")
+        messages.forEach { m ->
+            // Server (/t/app/inbox) returns { id, kind, config, trigger_id, created_at }
+            val kind      = m["kind"]?.toString() ?: return@forEach
+            val messageId = m["id"]?.toString() ?: ""
             @Suppress("UNCHECKED_CAST")
-            val cfg = (p["action_config"] as? Map<String, Any?>) ?: emptyMap()
-            dispatchToMessageHost(messageId, actionType, cfg)
+            val cfg = (m["config"] as? Map<String, Any?>) ?: emptyMap()
+            dispatchToMessageHost(messageId, kind, cfg)
         }
     }
 

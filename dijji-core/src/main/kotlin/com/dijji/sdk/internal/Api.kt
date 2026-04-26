@@ -156,10 +156,22 @@ internal class Api(
         }.getOrNull()
     }
 
-    /** GET /t/inbox?site=…&platform=android&visitor=… — pending in-app messages. */
+    /**
+     * GET /t/app/inbox?site=…&visitor=… — pending in-app messages for this
+     * device. Server returns banner / bottom_sheet / modal cards queued by
+     * either admin sends or the MobileEvaluator rule engine. Marks them
+     * delivered on read so we don't re-show the same card.
+     *
+     * Response shape:
+     *   { "ok": true, "messages": [
+     *       { "id": 42, "kind": "in_app_banner", "config": { "title": "...", "body": "..." },
+     *         "trigger_id": 7, "created_at": "..." },
+     *       ...
+     *   ] }
+     */
     fun getInbox(): List<Map<String, Any?>> {
-        val url = "${config.endpoint}/t/inbox?site=${config.siteKey}" +
-                "&platform=android&visitor=${ids.visitorId()}"
+        val url = "${config.endpoint}/t/app/inbox?site=${config.siteKey}" +
+                "&visitor=${ids.visitorId()}"
         val req = baseRequestBuilder(url).get().build()
         return runCatching {
             client.newCall(req).execute().use { resp ->
@@ -167,7 +179,7 @@ internal class Api(
                 val raw = resp.body?.string().orEmpty()
                 val parsed = mapAdapter.fromJson(raw) ?: return@use emptyList()
                 @Suppress("UNCHECKED_CAST")
-                (parsed["pushes"] as? List<Map<String, Any?>>) ?: emptyList()
+                (parsed["messages"] as? List<Map<String, Any?>>) ?: emptyList()
             }
         }.getOrDefault(emptyList())
     }
