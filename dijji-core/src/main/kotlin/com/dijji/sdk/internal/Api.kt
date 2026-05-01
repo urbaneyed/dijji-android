@@ -184,6 +184,20 @@ internal class Api(
         }.getOrDefault(emptyList())
     }
 
+    /**
+     * In-app survey sink — receives one body per answer + one complete from the
+     * SurveyView renderer (dijji-messages). Fire-and-forget: failures are
+     * logged at debug, no retry, no return signal. The server already has the
+     * pre-created response_id so a missed answer post just drops a single
+     * field, not the whole response.
+     */
+    fun postSurvey(body: Map<String, Any?>) {
+        // Best-effort: the body should always carry "site"; if not we tag it.
+        val merged = if (body.containsKey("site") && body["site"] != null) body
+                     else body + mapOf<String, Any?>("site" to config.siteKey)
+        post("/t/survey", merged)
+    }
+
     private fun post(path: String, body: Map<String, Any?>): Boolean {
         val json = mapAdapter.toJson(body)
         val reqBody = json.toRequestBody(JSON)

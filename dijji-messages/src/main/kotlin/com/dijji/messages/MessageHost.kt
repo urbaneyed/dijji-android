@@ -26,7 +26,14 @@ import java.net.URL
 import java.util.concurrent.Executors
 
 /**
- * In-app message host — renders 7 formats on top of the foreground activity.
+ * Callback signature for the survey renderer to push answers/completes back
+ * to dijji-core's Api.postSurvey. dijji-core wires this on init via reflection
+ * (see Dijji.init), so dijji-messages stays unaware of OkHttp / Moshi / etc.
+ */
+public typealias SurveyPostCallback = (Map<String, Any?>) -> Unit
+
+/**
+ * In-app message host — renders 8 formats on top of the foreground activity.
  * Universal: works in View apps and Compose apps alike, drawn with plain
  * Android Views + Material Components. No image-loading dependency: a tiny
  * built-in HttpURLConnection-backed loader handles `image_url` fields.
@@ -44,13 +51,23 @@ public object MessageHost {
     private val mainHandler = Handler(Looper.getMainLooper())
 
     /**
+     * Pluggable POST sink for the in_app_survey renderer. dijji-core wires
+     * this in [com.dijji.sdk.Dijji.init] (via reflection on the auto-generated
+     * Java setter `setOnSurveyPost`) so SurveyView can fire-and-forget each
+     * answer/complete without dijji-messages owning HTTP. Stays null if
+     * dijji-core wasn't initialized (then survey posts silently no-op).
+     */
+    @JvmStatic
+    public var onSurveyPost: SurveyPostCallback? = null
+
+    /**
      * Render a message by config. Dispatches on action_type.
      * @param activity Activity whose decor view will host the overlay. Pass the
      *                 current foreground activity via Dijji.currentActivity().
      * @param messageId Opaque ID for outcome reporting (dismissed / clicked).
      * @param actionType One of: in_app_banner | in_app_bottom_sheet | in_app_modal
      *                          | in_app_hero | in_app_nps | in_app_reactions
-     *                          | in_app_countdown
+     *                          | in_app_countdown | in_app_survey
      * @param cfg action_config map (title, body, cta_text, cta_url, image_url, etc.)
      */
     @JvmStatic
@@ -68,6 +85,7 @@ public object MessageHost {
             "in_app_nps"           -> renderNps(activity, messageId, cfg)
             "in_app_reactions"     -> renderReactions(activity, messageId, cfg)
             "in_app_countdown"     -> renderCountdown(activity, messageId, cfg)
+            "in_app_survey"        -> SurveyView.show(activity, messageId, cfg)
             else -> { /* silently ignore unknown; core logs */ }
         }
     }

@@ -112,6 +112,11 @@ public object Dijji {
         // One-shot boot tasks — referrer capture, rules prefetch, token refresh.
         Bootstrap.run(scope!!)
 
+        // Wire survey-post callback into dijji-messages (if installed). Reflection
+        // so dijji-core has no compile-time dep on dijji-messages — apps that
+        // don't ship messages don't pull in Material Components.
+        wireSurveyPost(api)
+
         Log.i("Dijji initialized for site=${config.siteKey} sdk=${config.sdkVersion}")
     }
 
@@ -263,6 +268,33 @@ public object Dijji {
 
     // Internal access for same-module callers only.
     internal fun scope(): DijjiScope? = scope
+
+    /**
+     * Reflection-wires `MessageHost.onSurveyPost` so the in-app survey UI
+     * (dijji-messages module) can fire each answer back via [Api.postSurvey].
+     * Soft-fail: if dijji-messages isn't on the classpath this is a no-op.
+     */
+    private fun wireSurveyPost(api: Api) {
+        try {
+            val cls = Class.forName("com.dijji.messages.MessageHost")
+            val instance = cls.getField("INSTANCE").get(null)
+            val setter = cls.methods.firstOrNull {
+                it.name == "setOnSurveyPost" && it.parameterCount == 1
+            } ?: return
+            // SurveyPostCallback = (Map<String, Any?>) -> Unit — typed lambda
+            // erases to kotlin.jvm.functions.Function1 at runtime, which is what
+            // the reflective setter expects.
+            val cb: (Map<String, Any?>) -> Unit = { body ->
+                runCatching { api.postSurvey(body) }
+            }
+            setter.invoke(instance, cb)
+            Log.d("Survey post callback wired into dijji-messages")
+        } catch (_: ClassNotFoundException) {
+            // dijji-messages not installed — no-op.
+        } catch (e: Throwable) {
+            Log.d("wireSurveyPost failed: ${e.message}")
+        }
+    }
 
     private fun required(): DijjiScope? {
         val s = scope
